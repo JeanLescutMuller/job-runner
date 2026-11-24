@@ -1,0 +1,27 @@
+# The boot kick (DESIGN §13), on the NAS only: deployed to ~/opt/job-runner/boot-kick/ by install.sh, which writes .env beside
+# it (JR_UID, JR_GID, JR_HOME, JR_HOMES = the folder that holds the homes). Started by Docker at each boot (restart: always).
+# By hand: docker compose -f ~/opt/job-runner/boot-kick/compose.yaml up -d --build; its log: docker logs job-runner-boot-kick
+name: job-runner
+services:
+  boot-kick:
+    build: .
+    image: job-runner-boot-kick:1
+    container_name: job-runner-boot-kick
+    user: "${JR_UID:?}:${JR_GID:?}"
+    restart: always
+    network_mode: none
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    environment:
+      KICK_UNITS_DIR: /host${JR_HOME:?}/.config/systemd/user
+      DBUS_SESSION_BUS_ADDRESS: unix:path=/host/run/user/${JR_UID}/bus
+      KICK_WAIT_S: "600"
+    volumes:
+      # the parents, not the folders: they exist at any boot (Docker would create a missing source as root); rslave shows
+      # the home and /run/user/<uid> even when they are mounted after the container started
+      - ${JR_HOMES:?}:/host${JR_HOMES}:ro,rslave
+      - /run/user:/host/run/user:ro,rslave
+    logging:
+      driver: json-file
+      options: {max-size: "1m", max-file: "2"}

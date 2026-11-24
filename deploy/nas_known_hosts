@@ -1,0 +1,3 @@
+# The NAS's SSH host key (BabisNAS, /etc/ssh/ssh_host_ed25519_key.pub, read 2026-11-22), known by the alias lib.sh gives
+# (HostKeyAlias=babisnas): the same key at home (babisnas.local) and on Tailscale (babisnas, MagicDNS). Installed as ~/opt/job-runner/nas_known_hosts.
+babisnas ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILne4ouFJudFbSK741bsJA9POYinDAs72e25Ak9tNajS

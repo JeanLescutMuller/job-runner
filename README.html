@@ -1,0 +1,345 @@
+<!doctype html>
+<!-- README for a human: entities only (files, arrows, status), never a rule or a tunable number; the rules are in AGENTS.md and DESIGN.md. The only README (no README.md). Opens with a double-click; one self-contained file. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>job-runner</title>
+<style>
+  :root {
+    --bg: #fafaf8; --fg: #1d1d1f; --muted: #6b6b70; --card: #ffffff; --line: #d8d8dc; --soft: #f1f1ee;
+    --live: #2e8b57; --partial: #c98a00; --broken: #c0392b; --planned: #8a8a90;
+    --mac: #3b6fd8; --vm: #2e8b57; --gcp: #c2410c; --gh: #7c3aed;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #161618; --fg: #ececf0; --muted: #9a9aa2; --card: #212124; --line: #3a3a3f; --soft: #2a2a2e;
+      --live: #5cc28a; --partial: #e0b040; --broken: #e8695c; --planned: #8a8a90;
+      --mac: #7aa2f7; --vm: #5cc28a; --gcp: #fb923c; --gh: #a78bfa;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.55 -apple-system, "Segoe UI", system-ui, sans-serif; }
+  main { max-width: 1100px; margin: 0 auto; padding: 32px 16px 64px; }
+  h1 { margin: 0 0 4px; font-size: 28px; }
+  h2 { margin: 44px 0 6px; font-size: 19px; }
+  h3 { margin: 0 0 6px; font-size: 15px; }
+  .lead { color: var(--muted); margin: 0; }
+  .sub { color: var(--muted); margin: 0 0 12px; font-size: 14px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px; overflow-x: auto; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 14px; }
+  .case { border-left: 5px solid var(--line); }
+  .case.live { border-left-color: var(--live); } .case.partial { border-left-color: var(--partial); }
+  .case.broken { border-left-color: var(--broken); } .case.planned { border-left-color: var(--planned); }
+  .case p { margin: 6px 0 0; color: var(--muted); font-size: 13.5px; }
+  svg text { fill: var(--fg); font: 13px -apple-system, system-ui, sans-serif; }
+  svg .t { font-weight: 600; }
+  svg .file { fill: var(--muted); font: 11px ui-monospace, Menlo, monospace; }
+  svg .lbl { fill: var(--muted); font: 11.5px -apple-system, system-ui, sans-serif; }
+  svg .box { fill: var(--card); stroke-width: 2; }
+  svg .fill { fill: var(--soft); stroke: var(--line); }
+  svg .live { stroke: var(--live); } svg .partial { stroke: var(--partial); }
+  svg .broken { stroke: var(--broken); } svg .planned { stroke: var(--planned); stroke-dasharray: 6 4; }
+  svg .mac { stroke: var(--mac); } svg .vm { stroke: var(--vm); } svg .gcp { stroke: var(--gcp); } svg .gh { stroke: var(--gh); }
+  svg .edge { stroke: var(--muted); stroke-width: 1.6; fill: none; marker-end: url(#arrow); }
+  svg .edge.dash { stroke-dasharray: 5 4; }
+  svg .edge.no { stroke: var(--broken); marker-end: url(#arrowno); }
+  .legend { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 12px; color: var(--muted); font-size: 13px; }
+  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+  pre { margin: 0; font: 13px/1.55 ui-monospace, Menlo, monospace; }
+  .keep { color: var(--live); font-weight: 600; } .repl { color: var(--partial); font-weight: 600; } .dim { color: var(--muted); }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; }
+  td, th { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; }
+  code { font: 12.5px ui-monospace, Menlo, monospace; }
+  .tag { display: inline-block; padding: 0 7px; border-radius: 9px; font-size: 12px; border: 1px solid; }
+  .tag.mac { color: var(--mac); } .tag.vm { color: var(--vm); } .tag.gcp { color: var(--gcp); }
+  footer { margin-top: 48px; color: var(--muted); font-size: 13px; }
+  a { color: inherit; }
+</style>
+</head>
+<body>
+<main>
+  <h1>job-runner</h1>
+  <p class="lead">One wrapper for every scheduled job on my machines (MacBook, NAS, GCP): a library of helpers to decide when to skip, standard statuses, everything on one phone dashboard. · In production since 2026-10-10 · Updated 2026-10-12 (verified against the NAS's <code>~/opt/job-runner/</code> that day)</p>
+
+  <svg width="0" height="0" style="position:absolute">
+    <defs>
+      <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" style="fill: var(--muted)"/></marker>
+      <marker id="arrowno" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" style="fill: var(--broken)"/></marker>
+    </defs>
+  </svg>
+
+  <!-- ============================================================ 1 -->
+  <h2>1 · The big picture: every machine reports to the NAS</h2>
+  <p class="sub">A trigger starts a job's entrypoint, which sources the library; each check writes its status here and copies it to the NAS, where the dashboard reads every machine's statuses.</p>
+  <div class="card">
+    <svg viewBox="0 0 1000 420" width="100%" role="img" aria-label="Machines report statuses to the NAS; the dashboard reads them">
+      <!-- MacBook -->
+      <g><rect class="box mac" x="10" y="10" width="310" height="240" rx="10"/>
+        <text class="t" x="26" y="36">MacBook</text><text class="file" x="100" y="36">chan-lescut-macbook-pro</text>
+        <text class="lbl" x="26" y="62">trigger: LaunchAgent (a tick)</text>
+        <text class="file" x="26" y="82">  └▶ ~/opt/&lt;repo&gt;/&lt;job&gt;.sh  (entrypoint)</text>
+        <text class="file" x="26" y="100">       └ . ~/opt/job-runner/lib.sh</text>
+        <text class="lbl" x="26" y="128">jobs</text>
+        <text class="file" x="26" y="146">agent-resume</text>
+        <text class="file" x="26" y="162">agent-tracker ×4</text>
+        <text class="file" x="26" y="178">job-applications.auto-job-apply</text>
+        <text class="file" x="26" y="194">auto-commit</text>
+        <text class="file" x="26" y="210">canaries ×11</text>
+        <text class="file" x="26" y="232">status/&lt;job&gt;/chan-lescut-macbook-pro.tsv</text>
+      </g>
+      <!-- NAS -->
+      <g><rect class="box vm" x="345" y="10" width="310" height="240" rx="10"/>
+        <text class="t" x="361" y="36">NAS</text><text class="file" x="390" y="36">BabisNAS</text>
+        <text class="lbl" x="361" y="62">trigger: systemd --user timer</text>
+        <text class="file" x="361" y="82">  └▶ ~/opt/&lt;repo&gt;/&lt;job&gt;.sh  (entrypoint)</text>
+        <text class="file" x="361" y="100">       └ . ~/opt/job-runner/lib.sh</text>
+        <text class="lbl" x="361" y="128">jobs</text>
+        <text class="file" x="361" y="146">agent-resume</text>
+        <text class="file" x="361" y="162">agent-tracker ×2</text>
+        <text class="file" x="361" y="178">trading-bot ×3</text>
+        <text class="file" x="361" y="194">auto-commit</text>
+        <text class="file" x="361" y="210">canaries ×12</text>
+        <text class="file" x="361" y="232">its own disk = the env NAS</text>
+      </g>
+      <!-- GCP -->
+      <g><rect class="box gcp" x="690" y="10" width="300" height="105" rx="10"/>
+        <text class="t" x="706" y="36">GCP</text>
+        <text class="lbl" x="706" y="58">trigger: Cloud Scheduler ▶ Cloud Run job</text>
+        <text class="file" x="706" y="78">auto-commit (its image holds lib.sh)</text>
+        <text class="file" x="706" y="98">status/auto-commit/GCP.tsv</text>
+      </g>
+      <!-- GitHub -->
+      <g><rect class="box gh" x="690" y="140" width="300" height="110" rx="10"/>
+        <text class="t" x="706" y="166">GitHub: job-runner-sync</text>
+        <text class="file" x="706" y="188">status/  claims/</text>
+        <text class="lbl" x="706" y="210">the env GITHUB: jobs coordinating there</text>
+        <text class="lbl" x="706" y="228">(auto-commit, 2 canaries), a backup only</text>
+      </g>
+      <!-- NAS store -->
+      <g><rect class="box vm" x="345" y="300" width="310" height="110" rx="10"/>
+        <text class="t" x="361" y="326">NAS: ~/opt/job-runner/</text>
+        <text class="file" x="361" y="348">status/&lt;job&gt;/&lt;machine&gt;.tsv</text>
+        <text class="file" x="361" y="366">logs/  (failed checks)</text>
+        <text class="file" x="361" y="384">conf/  (each job's settings)</text>
+        <text class="file" x="361" y="402">claims/</text>
+      </g>
+      <!-- dashboard -->
+      <g><rect class="box live" x="690" y="300" width="300" height="110" rx="10"/>
+        <text class="t" x="706" y="326">dashboard</text>
+        <text class="file" x="706" y="348">dashboard/dashboard.py :8097</text>
+        <text class="lbl" x="706" y="370">http://babisnas:8097 on the tailnet</text>
+        <text class="lbl" x="706" y="390">read on the phone</text>
+      </g>
+      <!-- edges -->
+      <path class="edge" d="M165,250 L165,355 L343,355"/>
+      <text class="lbl" x="175" y="290">SSH, job-runner's own key,</text>
+      <text class="lbl" x="175" y="306">through the gate (gate.sh):</text>
+      <text class="lbl" x="175" y="322">statuses, failed logs</text>
+      <path class="edge" d="M500,250 L500,298"/><text class="lbl" x="508" y="280">own disk</text>
+      <path class="edge" d="M690,95 L680,95 L680,320 L657,320"/>
+      <text class="lbl" x="675" y="300" transform="rotate(-90 675 300)">SSH, gated key</text>
+      <path class="edge" d="M655,355 L688,355"/>
+      <path class="edge dash" d="M840,250 L840,298"/><text class="lbl" x="848" y="280">fetched (backup)</text>
+      <path class="edge dash" d="M655,180 L688,180"/>
+      <path class="edge dash" d="M840,115 L840,138"/>
+    </svg>
+    <div class="legend">
+      <span><span class="dot" style="background: var(--mac)"></span>MacBook</span>
+      <span><span class="dot" style="background: var(--vm)"></span>NAS BabisNAS</span>
+      <span><span class="dot" style="background: var(--gcp)"></span>GCP</span>
+      <span><span class="dot" style="background: var(--gh)"></span>GitHub</span>
+      <span>── statuses (SSH or own disk) &nbsp; - - - git (job-runner-sync)</span>
+    </div>
+  </div>
+
+  <!-- ============================================================ 2 -->
+  <h2>2 · How job-runner gets onto each machine</h2>
+  <p class="sub">Like every repo: a clone, then <code>bash install.sh</code>. The script recognises the NAS by its machine name and adds the gate and the dashboard there.</p>
+  <div class="card">
+    <svg viewBox="0 0 1000 330" width="100%" role="img" aria-label="Install paths for the Mac, the NAS and GCP">
+      <!-- Mac row -->
+      <text class="t" x="10" y="30" style="fill: var(--mac)">MacBook</text>
+      <rect class="box mac" x="10" y="42" width="190" height="62" rx="8"/><text x="22" y="66">the repo</text><text class="file" x="22" y="88">~/dev/infra/job-runner</text>
+      <path class="edge" d="M200,73 L258,73"/><text class="lbl" x="204" y="64">install.sh</text>
+      <rect class="box mac" x="260" y="42" width="330" height="62" rx="8"/><text x="272" y="66">~/opt/job-runner/</text><text class="file" x="272" y="88">lib.sh ops.sh put-conf.sh canaries/ skills/</text>
+      <path class="edge" d="M590,73 L648,73"/><text class="lbl" x="598" y="64">links</text>
+      <rect class="box mac" x="650" y="42" width="340" height="62" rx="8"/><text class="file" x="662" y="66">~/Library/LaunchAgents/…job-runner.canaries.plist</text><text class="file" x="662" y="88">~/.claude/skills/jobs-and-services (+ ~/.agents)</text>
+      <!-- NAS row -->
+      <text class="t" x="10" y="140" style="fill: var(--vm)">NAS BabisNAS</text>
+      <rect class="box gh" x="10" y="152" width="190" height="62" rx="8"/><text x="22" y="176">GitHub main</text><text class="file" x="22" y="198">a temporary clone</text>
+      <path class="edge" d="M200,183 L258,183"/><text class="lbl" x="204" y="174">install.sh</text>
+      <rect class="box vm" x="260" y="152" width="330" height="80" rx="8"/><text x="272" y="176">~/opt/job-runner/</text><text class="file" x="272" y="198">lib.sh ops.sh put-conf.sh canaries/ skills/</text><text class="file" x="272" y="218">+ gate.sh  dashboard/</text>
+      <path class="edge" d="M590,183 L648,183"/><text class="lbl" x="598" y="174">links</text>
+      <rect class="box vm" x="650" y="152" width="340" height="80" rx="8"/><text class="file" x="662" y="176">~/.config/systemd/user/: canaries, dashboard</text><text class="file" x="662" y="196">~/.ssh/authorized_keys: the gated keys' lines</text><text class="file" x="662" y="216">tailscale serve :8097  ·  skills links</text>
+      <!-- GCP row -->
+      <text class="t" x="10" y="262" style="fill: var(--gcp)">GCP</text>
+      <rect class="box gcp" x="10" y="274" width="190" height="48" rx="8"/><text x="22" y="303">a project's image</text>
+      <path class="edge" d="M200,298 L258,298"/>
+      <rect class="box gcp" x="260" y="274" width="330" height="48" rx="8"/><text class="file" x="272" y="295">auto-commit/gcp.Dockerfile copies lib.sh</text><text class="lbl" x="272" y="313">no install.sh on GCP</text>
+    </svg>
+  </div>
+
+  <h3 style="margin-top:18px">What a reinstall replaces, and what it never touches (<code>~/opt/job-runner/</code>)</h3>
+  <div class="card"><pre>~/opt/job-runner/
+├── <span class="repl">lib.sh  ops.sh  put-conf.sh</span>       <span class="dim">the library and its operations</span>
+├── <span class="repl">gate.sh</span>                           <span class="dim">NAS only: what job-runner's keys may run</span>
+├── <span class="repl">dashboard/</span>                        <span class="dim">NAS only: dashboard.py, conf/_default.conf, conf/canaries*.conf</span>
+├── <span class="repl">canaries/*.sh  canaries/work/</span>     <span class="dim">the canaries</span>
+├── <span class="repl">skills/</span>                           <span class="dim">read-only copies, linked from ~/.claude/skills/</span>
+├── <span class="repl">units/</span>                            <span class="dim">job-runner's own trigger files only</span>
+├── <span class="keep">conf/</span>                             <span class="dim">NAS: every job's settings (links and copies, from the projects)</span>
+├── <span class="keep">status/  logs/  claims/  sync/</span>    <span class="dim">written by the checks</span>
+└── <span class="keep">canaries/data/</span>                    <span class="dim">the canaries' own data</span></pre>
+    <div class="legend"><span><span class="repl">■</span> replaced by install.sh</span><span><span class="keep">■</span> never touched by install.sh (nor uninstall.sh)</span></div>
+  </div>
+
+  <!-- ============================================================ 3 -->
+  <h2>3 · A job's dashboard settings: every case</h2>
+  <p class="sub">A job's settings (its title, its order, when it turns red…) live in its own project, beside its entrypoint. The project's <code>install.sh</code> deploys the file to <code>~/opt/&lt;repo&gt;/</code>, then calls <code>put-conf.sh</code>, which gives it to the dashboard on the NAS.</p>
+
+  <div class="grid">
+    <div class="card case live">
+      <h3>A · The job runs on the NAS</h3>
+      <svg viewBox="0 0 460 120" width="100%" role="img" aria-label="Symlink on the NAS">
+        <rect class="box vm" x="5" y="10" width="200" height="100" rx="8"/><text class="t" x="15" y="30">NAS</text>
+        <text class="file" x="15" y="52">~/opt/&lt;repo&gt;/</text><text class="file" x="15" y="68">  &lt;job&gt;.sh</text><text class="file" x="15" y="84">  &lt;job&gt;.conf</text>
+        <rect class="box vm" x="255" y="10" width="200" height="100" rx="8"/><text class="t" x="265" y="30">NAS</text>
+        <text class="file" x="265" y="52">~/opt/job-runner/conf/</text><text class="file" x="265" y="68">  &lt;repo&gt;.</text><text class="file" x="265" y="84">  &lt;job&gt;.conf</text>
+        <path class="edge" d="M253,80 L208,80"/><text class="lbl" x="212" y="72">symlink</text>
+      </svg>
+      <p>One file, on one disk: the dashboard reads the project's own file through a symlink.</p>
+    </div>
+
+    <div class="card case live">
+      <h3>B · The job runs on the Mac only</h3>
+      <svg viewBox="0 0 460 120" width="100%" role="img" aria-label="Copy over SSH">
+        <rect class="box mac" x="5" y="10" width="200" height="100" rx="8"/><text class="t" x="15" y="30">MacBook</text>
+        <text class="file" x="15" y="52">~/opt/job-applications/</text><text class="file" x="15" y="68">  auto-job-apply.sh</text><text class="file" x="15" y="84">  auto-job-apply.conf</text>
+        <rect class="box vm" x="255" y="10" width="200" height="100" rx="8"/><text class="t" x="265" y="30">NAS</text>
+        <text class="file" x="265" y="52">~/opt/job-runner/conf/</text><text class="file" x="265" y="68">  job-applications.</text><text class="file" x="265" y="84">  auto-job-apply.conf (copy)</text>
+        <path class="edge" d="M207,80 L253,80"/><text class="lbl" x="209" y="72">SSH</text>
+      </svg>
+      <p>Nothing of this project is on the NAS, so its file travels like its statuses do: a copy over SSH, through the gate.</p>
+    </div>
+
+    <div class="card case live">
+      <h3>C · The job runs on the Mac and the NAS</h3>
+      <svg viewBox="0 0 460 145" width="100%" role="img" aria-label="NAS link kept, Mac copy refused">
+        <rect class="box mac" x="5" y="10" width="140" height="100" rx="8"/><text class="t" x="15" y="30">MacBook</text>
+        <text class="file" x="15" y="56">~/opt/agent-</text><text class="file" x="15" y="72">session-manager/</text><text class="file" x="15" y="88">entrypoint.conf</text>
+        <rect class="box vm" x="160" y="10" width="140" height="100" rx="8"/><text class="t" x="170" y="30">NAS</text>
+        <text class="file" x="170" y="56">~/opt/agent-</text><text class="file" x="170" y="72">session-manager/</text><text class="file" x="170" y="88">entrypoint.conf</text>
+        <rect class="box vm" x="315" y="10" width="140" height="100" rx="8"/><text class="t" x="325" y="30">NAS</text>
+        <text class="file" x="325" y="56">conf/agent-</text><text class="file" x="325" y="72">session-</text><text class="file" x="325" y="88">manager.conf</text>
+        <path class="edge" d="M313,96 L302,96"/>
+        <path class="edge no" d="M75,110 L75,126 L385,126 L385,113"/><text class="lbl" x="120" y="141" style="fill: var(--broken)">Mac's copy: refused, the link is kept</text>
+      </svg>
+      <p>The NAS's install makes the symlink (as in A). The Mac's install also sends a copy, which is refused: <code>kept: linked on the NAS</code>.</p>
+    </div>
+
+    <div class="card case planned">
+      <h3>D · The job runs on GCP</h3>
+      <svg viewBox="0 0 460 120" width="100%" role="img" aria-label="GCP: copy from the Mac deploy">
+        <rect class="box gcp" x="5" y="10" width="200" height="100" rx="8"/><text class="t" x="15" y="30">GCP (deployed from the Mac)</text>
+        <text class="file" x="15" y="56">the project's deploy</text><text class="file" x="15" y="72">script, on the Mac</text>
+        <rect class="box vm" x="255" y="10" width="200" height="100" rx="8"/><text class="t" x="265" y="30">NAS</text>
+        <text class="file" x="265" y="56">~/opt/job-runner/conf/</text><text class="file" x="265" y="72">  &lt;job&gt;.conf (copy)</text>
+        <path class="edge dash" d="M207,66 L253,66"/><text class="lbl" x="209" y="58">SSH</text>
+      </svg>
+      <p>As B. No GCP job has settings today (auto-commit uses the defaults).</p>
+    </div>
+
+    <div class="card case live">
+      <h3>E · The job is decommissioned</h3>
+      <svg viewBox="0 0 460 120" width="100%" role="img" aria-label="A real file with DECOMMISSIONED=1">
+        <rect class="box vm" x="5" y="10" width="450" height="100" rx="8"/><text class="t" x="15" y="30">NAS</text>
+        <text class="file" x="15" y="56">~/opt/job-runner/conf/agent-usage-tracker.push.conf   (a real file)</text>
+        <text class="file" x="15" y="76">DECOMMISSIONED=1</text>
+        <text class="lbl" x="15" y="98">▶ folded under "Decommissioned" at the bottom of the dashboard</text>
+      </svg>
+      <p>One <code>ssh</code> command on the NAS, no repo and no install (the skill <code>jobs-and-services</code> has it). If the job comes back, its install gives its file again.</p>
+    </div>
+
+    <div class="card case broken">
+      <h3>F · The project left the NAS, the job was not decommissioned</h3>
+      <svg viewBox="0 0 460 120" width="100%" role="img" aria-label="Broken link shown as a yellow line">
+        <rect class="box broken" x="5" y="10" width="200" height="100" rx="8"/><text class="t" x="15" y="30">NAS</text>
+        <text class="file" x="15" y="56">~/opt/&lt;repo&gt;/</text><text class="file" x="15" y="72">  (uninstalled)</text>
+        <rect class="box vm" x="255" y="10" width="200" height="100" rx="8"/><text class="t" x="265" y="30">NAS</text>
+        <text class="file" x="265" y="56">conf/&lt;job&gt;.conf</text><text class="file" x="265" y="72">  → nothing</text>
+        <path class="edge no" d="M253,66 L208,66"/>
+      </svg>
+      <p>The dashboard shows a yellow line, <code>links to a missing file</code>, until the job is decommissioned (E).</p>
+    </div>
+  </div>
+
+  <h3 style="margin-top:18px">How the dashboard reads them, for one job</h3>
+  <div class="card">
+    <svg viewBox="0 0 1000 90" width="100%" role="img" aria-label="Read order">
+      <rect class="box live" x="10" y="15" width="270" height="60" rx="8"/><text x="22" y="40">job-runner's defaults</text><text class="file" x="22" y="60">dashboard/conf/_default.conf</text>
+      <path class="edge" d="M280,45 L360,45"/><text class="lbl" x="288" y="36">overridden by</text>
+      <rect class="box live" x="362" y="15" width="270" height="60" rx="8"/><text x="374" y="40">the repo's file, if any</text><text class="file" x="374" y="60">conf/&lt;repo&gt;.conf</text>
+      <path class="edge" d="M632,45 L712,45"/><text class="lbl" x="640" y="36">overridden by</text>
+      <rect class="box live" x="714" y="15" width="276" height="60" rx="8"/><text x="726" y="40">the job's file</text><text class="file" x="726" y="60">conf/&lt;repo&gt;.&lt;job&gt;.conf</text>
+    </svg>
+  </div>
+
+  <h3 style="margin-top:18px">Every job's settings today (2026-10-12)</h3>
+  <div class="card">
+    <table>
+      <tr><th>Job</th><th>Machines</th><th>Its file (deployed copy)</th><th>On the NAS, <code>conf/</code></th></tr>
+      <tr><td><code>agent-resume</code></td><td><span class="tag mac">Mac</span> <span class="tag vm">NAS</span></td><td><code>~/opt/agent-resume/entrypoint.conf</code></td><td><span class="dot" style="background: var(--live)"></span>symlink (C)</td></tr>
+      <tr><td><code>agent-tracker.claude-quota</code>, <code>.aggregates</code></td><td><span class="tag mac">Mac</span> <span class="tag vm">NAS</span></td><td><code>~/opt/agent-tracker/&lt;job&gt;.conf</code></td><td><span class="dot" style="background: var(--live)"></span>symlink (C)</td></tr>
+      <tr><td><code>agent-tracker.codex-quota</code>, <code>.codex-plan-history</code></td><td><span class="tag mac">Mac</span></td><td><code>~/opt/agent-tracker/&lt;job&gt;.conf</code></td><td><span class="dot" style="background: var(--live)"></span>copy (B)</td></tr>
+      <tr><td><code>job-applications.auto-job-apply</code></td><td><span class="tag mac">Mac</span></td><td><code>~/opt/job-applications/auto-job-apply.conf</code></td><td><span class="dot" style="background: var(--live)"></span>copy (B)</td></tr>
+      <tr><td><code>trading-bot.cpl_monitoring</code>, <code>.cpl_monitoring_pack</code>, <code>.copy-trading-shadow-test</code>, <code>.daily-global-scraping</code></td><td><span class="tag">NAS</span></td><td><code>~/opt/trading-bot/&lt;job&gt;.conf</code></td><td><span class="dot" style="background: var(--live)"></span>copy (B)</td></tr>
+      <tr><td><code>auto-commit</code></td><td><span class="tag mac">Mac</span> <span class="tag vm">NAS</span> <span class="tag gcp">GCP</span></td><td>none</td><td>none: the defaults</td></tr>
+      <tr><td><code>canaries.*</code></td><td><span class="tag mac">Mac</span> <span class="tag vm">NAS</span></td><td>job-runner's <code>dashboard/conf/canaries*.conf</code></td><td>none: read from <code>dashboard/conf/</code></td></tr>
+      <tr><td><code>agent-usage-tracker.push</code>, <code>.transcripts</code>, <code>auto-apply</code>, <code>job-applications.auto-apply</code>, <code>agent-session-manager</code>, <code>agent-usage-tracker.*</code> (renamed 2026-11-07)</td><td>—</td><td>none</td><td><span class="dot" style="background: var(--planned)"></span>a real file, decommissioned (E)</td></tr>
+    </table>
+  </div>
+
+  <!-- ============================================================ 4 -->
+  <h2>4 · The repo</h2>
+  <div class="card"><pre>job-runner/
+├── <a href="AGENTS.md">AGENTS.md</a>  <a href="REQUIREMENTS.md">REQUIREMENTS.md</a>        <span class="dim">rules and words for agents · what the user gets</span>
+├── <a href="DESIGN.md">DESIGN.md</a>  <a href="CONSIDERATIONS.md">CONSIDERATIONS.md</a>      <span class="dim">what is built and why · what is still unclear</span>
+├── <a href="install.sh">install.sh</a>  <a href="uninstall.sh">uninstall.sh</a>          <span class="dim">install on this machine (section 2) · remove it, keeping the data</span>
+├── <a href="lib.sh">lib.sh</a>                            <span class="dim">the library, sourced by every entrypoint</span>
+├── <a href="ops.sh">ops.sh</a>                            <span class="dim">the 7 operations on an env's folder (put-status, put-log, put-conf, …)</span>
+├── <a href="gate.sh">gate.sh</a>                           <span class="dim">the NAS's gate: job-runner's keys may run only ops.sh</span>
+├── <a href="put-conf.sh">put-conf.sh</a>                       <span class="dim">gives a job's settings to the dashboard (section 3)</span>
+├── <a href="dashboard/">dashboard/</a>                        <span class="dim">dashboard.py; conf/: the defaults and the canaries' settings</span>
+├── <a href="canaries/">canaries/</a>                         <span class="dim">fake jobs testing each promise in real conditions</span>
+├── <a href="doc/examples.md">doc/examples.md</a>                   <span class="dim">every current job's entrypoint, in its own project</span>
+├── <a href="skills/jobs-and-services/SKILL.md">skills/jobs-and-services/</a>         <span class="dim">the skill for creating, changing and removing jobs and services</span>
+├── <a href="deploy/keys/">deploy/keys/</a>                      <span class="dim">job-runner's public keys, one per machine, for the gate</span>
+├── <a href="test/">test/</a>                             <span class="dim">lib_test.sh, examples_test.sh, dashboard_test.py, gate_test.sh</span>
+└── <a href="todo.html">todo.html</a>                       <span class="dim">open work, in Todoist</span></pre></div>
+
+  <h2>5 · Components</h2>
+  <div class="card">
+    <table>
+      <tr><th>Component</th><th>Files</th><th>Where</th><th>Status</th></tr>
+      <tr><td>the library</td><td><code>lib.sh</code>, <code>ops.sh</code></td><td><span class="tag mac">Mac</span> <span class="tag vm">NAS</span> <span class="tag gcp">GCP</span></td><td><span class="dot" style="background: var(--live)"></span>live</td></tr>
+      <tr><td>the gate</td><td><code>gate.sh</code>, <code>deploy/keys/</code></td><td><span class="tag vm">NAS</span></td><td><span class="dot" style="background: var(--live)"></span>live</td></tr>
+      <tr><td>the dashboard</td><td><code>dashboard/dashboard.py</code></td><td><span class="tag vm">NAS</span></td><td><span class="dot" style="background: var(--live)"></span>live</td></tr>
+      <tr><td>settings per job</td><td><code>put-conf.sh</code>, the projects' <code>&lt;job&gt;.conf</code></td><td><span class="tag mac">Mac</span> <span class="tag vm">NAS</span></td><td><span class="dot" style="background: var(--live)"></span>live</td></tr>
+      <tr><td>the canaries</td><td><code>canaries/</code></td><td><span class="tag mac">Mac</span> <span class="tag vm">NAS</span></td><td><span class="dot" style="background: var(--live)"></span>live</td></tr>
+      <tr><td>install, uninstall</td><td><code>install.sh</code>, <code>uninstall.sh</code></td><td><span class="tag mac">Mac</span> <span class="tag vm">NAS</span></td><td><span class="dot" style="background: var(--live)"></span>live (uninstall never run)</td></tr>
+      <tr><td>the backup env GITHUB</td><td><code>job-runner-sync</code></td><td>GitHub</td><td><span class="dot" style="background: var(--live)"></span>live</td></tr>
+    </table>
+    <div class="legend">
+      <span><span class="dot" style="background: var(--live)"></span>live</span>
+      <span><span class="dot" style="background: var(--partial)"></span>partial</span>
+      <span><span class="dot" style="background: var(--broken)"></span>broken</span>
+      <span><span class="dot" style="background: var(--planned)"></span>planned / not used</span>
+    </div>
+  </div>
+
+  <footer>Rules and words for agents: <a href="AGENTS.md">AGENTS.md</a> · Why it is built this way: <a href="DESIGN.md">DESIGN.md</a> (§11: the dashboard's settings) · Every job as an entrypoint: <a href="doc/examples.md">doc/examples.md</a></footer>
+</main>
+</body>
+</html>
