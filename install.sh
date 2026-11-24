@@ -11,7 +11,7 @@
 #   needs the operator set once: sudo tailscale set --operator=$USER).
 #   The NAS also: the boot kick (boot-kick/, DESIGN §13), the container job-runner-boot-kick that starts the user's
 #   systemd jobs at each boot; com.jeanlescut.job-runner.home-mode, a oneshot of default.target that puts the home back to
-#   700 and its files' modes back (UGOS sets them to 777 at boot); its healthchecks.io ping URL is the user's: ~/.config/job-runner/healthchecks_babisnas.url.
+#   700 (UGOS sets it to 777 at boot; the exec bits: the skill nas-restart, my-setup); its healthchecks.io ping URL is the user's: ~/.config/job-runner/healthchecks_babisnas.url.
 #   And the job job-runner.backup (backup/backup.sh, to ~/opt/job-runner/backup.sh): /volume1/private (the encrypted folder) into the restic store on
 #   the portable disk, run by com.jeanlescut.job-runner.backup (a timer, Sundays 02:00 UTC, Persistent); its dashboard
 #   settings backup.conf given to the dashboard; its healthchecks.io ping URL: ~/.config/job-runner/healthchecks_babisnas-backup.url.
